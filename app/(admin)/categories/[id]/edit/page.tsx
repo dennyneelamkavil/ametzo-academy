@@ -1,0 +1,20 @@
+import { Metadata } from "next";
+import CategoryFormClient from "../../components/CategoryFormClient";
+
+export const metadata: Metadata = {
+  title: "Edit Category | Ametzo Academy Admin",
+  description: "Edit category in Ametzo Academy admin dashboard",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
+
+interface Params {
+  params: { id: string };
+}
+
+export default async function EditCategoryPage({ params }: Params) {
+  const { id } = await params;
+  return <CategoryFormClient mode="edit" id={id} />;
+}
