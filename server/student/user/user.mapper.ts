@@ -6,6 +6,7 @@ export function mapStudent(student: any) {
     phone: student.phone,
     fullName: student.fullName,
     email: student.email,
+    avatar: student.avatar ? { url: student.avatar.url } : null,
     isActive: student.isActive,
     lastLoginAt: student.lastLoginAt,
     createdAt: student.createdAt,
