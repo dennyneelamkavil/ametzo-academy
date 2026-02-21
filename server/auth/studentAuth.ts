@@ -10,8 +10,6 @@ const STUDENT_JWT_SECRET = process.env.STUDENT_JWT_SECRET!;
 type StudentTokenPayload = {
   sub: string;
   type: "student";
-  iat: number;
-  exp: number;
 };
 
 export async function requireStudentAuth(req: Request) {
