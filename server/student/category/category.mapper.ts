@@ -10,7 +10,7 @@ export function mapCategoryForStudentList(category: any) {
   };
 }
 
-export function mapCategoryDetail(category: any, subcategories: any[]) {
+export function mapCategoryDetail(category: any, courses: any[]) {
   return {
     id: category._id.toString(),
     name: category.name,
@@ -18,11 +18,14 @@ export function mapCategoryDetail(category: any, subcategories: any[]) {
     image: category.image ? { url: category.image.url } : null,
     description: category.description ?? null,
 
-    subcategories: subcategories.map((sub) => ({
-      id: sub._id.toString(),
-      name: sub.name,
-      slug: sub.slug,
-      image: sub.image ? { url: sub.image.url } : null,
+    courses: courses.map((course) => ({
+      id: course._id.toString(),
+      title: course.title,
+      slug: course.slug,
+      image: course.image ? { url: course.image.url } : null,
+      durationHours: course.durationHours ?? 0,
+      totalLessons: course.totalLessons ?? 0,
+      price: course.price ?? 0,
     })),
 
     seo: category.seo ?? null,

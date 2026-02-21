@@ -2,7 +2,7 @@ import "server-only";
 
 import { connectDB } from "@/server/db";
 import { CategoryModel } from "@/server/models/category.model";
-import { SubCategoryModel } from "@/server/models/subcategory.model";
+import { CourseModel } from "@/server/models/course.model";
 import { AppError } from "@/server/errors/AppError";
 
 import {
@@ -36,12 +36,13 @@ export async function getStudentCategoryDetail(slug: string) {
     throw new AppError("Category not found", 404);
   }
 
-  const subcategories = await SubCategoryModel.find({
+  const courses = await CourseModel.find({
     category: category._id,
-    isActive: true,
+    isPublished: true,
   })
     .sort({ createdAt: -1 })
+    .select("_id title slug image durationHours price")
     .lean();
 
-  return mapCategoryDetail(category, subcategories);
+  return mapCategoryDetail(category, courses);
 }
