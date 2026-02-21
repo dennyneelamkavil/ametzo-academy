@@ -1,53 +1,6 @@
 import "server-only";
 import { Schema, model, models } from "mongoose";
-
-const AddressSchema = new Schema(
-  {
-    name: {
-      type: String,
-      trim: true,
-      required: true,
-    },
-    phone: {
-      type: String,
-      trim: true,
-      required: true,
-    },
-    addressLine1: {
-      type: String,
-      trim: true,
-      required: true,
-    },
-    addressLine2: {
-      type: String,
-      trim: true,
-    },
-    city: {
-      type: String,
-      trim: true,
-      required: true,
-    },
-    state: {
-      type: String,
-      trim: true,
-      required: true,
-    },
-    pincode: {
-      type: String,
-      trim: true,
-      required: true,
-    },
-    country: {
-      type: String,
-      default: "India",
-    },
-    isDefault: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  { timestamps: true },
-);
+import { MediaSchema } from "@/server/media/media.schema";
 
 const StudentSchema = new Schema(
   {
@@ -63,18 +16,21 @@ const StudentSchema = new Schema(
       lowercase: true,
       trim: true,
       sparse: true,
+      unique: true,
     },
     fullName: {
       type: String,
       trim: true,
     },
-    wishlist: [
+    avatar: {
+      type: MediaSchema,
+    },
+    savedCourses: [
       {
         type: Schema.Types.ObjectId,
-        ref: "Product",
+        ref: "Course",
       },
     ],
-    addresses: [AddressSchema],
     isActive: {
       type: Boolean,
       default: true,
