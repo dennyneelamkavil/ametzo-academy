@@ -2,7 +2,7 @@ import "server-only";
 
 import { connectDB } from "@/server/db";
 import { CategoryModel } from "@/server/models/category.model";
-import { SubCategoryModel } from "@/server/models/subcategory.model";
+import { CourseModel } from "@/server/models/course.model";
 
 import { mapCategory } from "@/server/category/category.mapper";
 import type {
@@ -165,7 +165,7 @@ export async function updateCategory(id: string, input: UpdateCategoryInput) {
   ) {
     await deleteFromCloudinary(
       existing.image.publicId,
-      existing.image.resourceType
+      existing.image.resourceType,
     );
   }
 
@@ -176,7 +176,7 @@ export async function updateCategory(id: string, input: UpdateCategoryInput) {
   ) {
     await deleteFromCloudinary(
       existing.seo.ogImage.publicId,
-      existing.seo.ogImage.resourceType
+      existing.seo.ogImage.resourceType,
     );
   }
 
@@ -187,13 +187,13 @@ export async function updateCategory(id: string, input: UpdateCategoryInput) {
 export async function deleteCategory(id: string) {
   await connectDB();
 
-  const isUsed = await SubCategoryModel.exists({
+  const isUsed = await CourseModel.exists({
     category: id,
   });
   if (isUsed) {
     throw new AppError(
-      "Cannot delete category: subcategories are linked to this category",
-      409
+      "Cannot delete category: courses are linked to this category",
+      409,
     );
   }
 
@@ -208,13 +208,13 @@ export async function deleteCategory(id: string) {
   if (category?.image?.publicId) {
     await deleteFromCloudinary(
       category.image.publicId,
-      category.image.resourceType
+      category.image.resourceType,
     );
   }
   if (category.seo?.ogImage?.publicId) {
     await deleteFromCloudinary(
       category.seo.ogImage.publicId,
-      category.seo.ogImage.resourceType
+      category.seo.ogImage.resourceType,
     );
   }
 
