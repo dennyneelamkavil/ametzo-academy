@@ -1,10 +1,14 @@
-import { NextResponse } from "next/server";
-import { getHomeData } from "@/server/student/home/home.service";
+import { NextRequest, NextResponse } from "next/server";
+
+import { requireStudentAuth } from "@/server/auth/studentAuth";
+import { getStudentHome } from "@/server/student/home/home.service";
 import { handleApiError } from "@/server/errors/handleApiError";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    return NextResponse.json(await getHomeData());
+    const { studentId } = await requireStudentAuth(req);
+
+    return NextResponse.json(await getStudentHome(studentId));
   } catch (err) {
     return handleApiError(err);
   }
