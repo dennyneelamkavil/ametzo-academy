@@ -3,45 +3,45 @@ import "server-only";
 import { connectDB } from "@/server/db";
 import { StudentModel } from "@/server/models/student.model";
 import { AppError } from "@/server/errors/AppError";
-import { mapWishlistProduct } from "./wishlist.mapper";
+import { mapSavedCourses } from "./saved-courses.mapper";
 
-export async function listWishlist(studentId: string) {
+export async function listSavedCourses(studentId: string) {
   await connectDB();
 
   const student = await StudentModel.findById(studentId)
-    .populate("wishlist")
+    .populate("savedCourses")
     .lean();
 
   if (!student) throw new AppError("Student not found", 404);
 
-  return student.wishlist.map(mapWishlistProduct);
+  return student.savedCourses.map(mapSavedCourses);
 }
 
-export async function addToWishlist(studentId: string, productId: string) {
+export async function addToSavedCourses(studentId: string, courseId: string) {
   await connectDB();
 
   const student = await StudentModel.findById(studentId);
   if (!student) throw new AppError("Student not found", 404);
 
-  if (!student.wishlist.includes(productId as any)) {
-    student.wishlist.push(productId as any);
+  if (!student.savedCourses.includes(courseId as any)) {
+    student.savedCourses.push(courseId as any);
     await student.save();
   }
 
   return { success: true };
 }
 
-export async function removeFromWishlist(
+export async function removeFromSavedCourses(
   studentId: string,
-  productId: string,
+  courseId: string,
 ) {
   await connectDB();
 
   const student = await StudentModel.findById(studentId);
   if (!student) throw new AppError("Student not found", 404);
 
-  student.wishlist = student.wishlist.filter(
-    (id: (typeof student.wishlist)[number]) => id.toString() !== productId,
+  student.savedCourses = student.savedCourses.filter(
+    (id: (typeof student.savedCourses)[number]) => id.toString() !== courseId,
   );
 
   await student.save();

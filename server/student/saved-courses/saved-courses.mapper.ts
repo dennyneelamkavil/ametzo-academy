@@ -1,6 +1,6 @@
 import "server-only";
 
-export function mapWishlistProduct(product: any) {
+export function mapSavedCourses(product: any) {
   return {
     id: String(product._id),
     name: product.name,

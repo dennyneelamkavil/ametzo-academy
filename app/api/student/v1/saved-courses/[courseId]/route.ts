@@ -1,22 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireStudentAuth } from "@/server/auth/studentAuth";
 import {
-  addToWishlist,
-  removeFromWishlist,
-} from "@/server/student/wishlist/wishlist.service";
+  addToSavedCourses,
+  removeFromSavedCourses,
+} from "@/server/student/saved-courses/saved-courses.service";
 import { handleApiError } from "@/server/errors/handleApiError";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ productId: string }> },
+  { params }: { params: Promise<{ courseId: string }> },
 ) {
   try {
-    const { productId } = await params;
+    const { courseId } = await params;
     const auth = await requireStudentAuth(req);
 
-    return NextResponse.json(await addToWishlist(auth.studentId, productId), {
-      status: 201,
-    });
+    return NextResponse.json(
+      await addToSavedCourses(auth.studentId, courseId),
+      {
+        status: 201,
+      },
+    );
   } catch (err) {
     return handleApiError(err);
   }
@@ -24,14 +27,14 @@ export async function POST(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ productId: string }> },
+  { params }: { params: Promise<{ courseId: string }> },
 ) {
   try {
-    const { productId } = await params;
+    const { courseId } = await params;
     const auth = await requireStudentAuth(req);
 
     return NextResponse.json(
-      await removeFromWishlist(auth.studentId, productId),
+      await removeFromSavedCourses(auth.studentId, courseId),
     );
   } catch (err) {
     return handleApiError(err);
