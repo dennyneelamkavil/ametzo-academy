@@ -8,12 +8,12 @@ import { useSession } from "next-auth/react";
 import { hasPermission } from "@/lib/authorization";
 import { useSidebar } from "@/context/SidebarContext";
 import {
+  BookOpen,
+  ClipboardList,
   Home,
-  Layers,
-  Package,
+  PlayCircle,
   Search,
   ShieldCheck,
-  Store,
   Tags,
   UserCircle,
   UserCog,
@@ -41,14 +41,8 @@ const homeNavItem: NavItem = {
 
 const navGroups: NavGroup[] = [
   {
-    label: "Catalog",
+    label: "Academy",
     items: [
-      {
-        icon: <Package />,
-        name: "Products",
-        path: "/products",
-        permission: "product:read",
-      },
       {
         icon: <Tags />,
         name: "Categories",
@@ -56,10 +50,16 @@ const navGroups: NavGroup[] = [
         permission: "category:read",
       },
       {
-        icon: <Layers />,
-        name: "SubCategories",
-        path: "/subcategories",
-        permission: "subcategory:read",
+        icon: <BookOpen />,
+        name: "Courses",
+        path: "/courses",
+        permission: "course:read",
+      },
+      {
+        icon: <PlayCircle />,
+        name: "Lessons",
+        path: "/lessons",
+        permission: "lesson:read",
       },
       {
         icon: <Search />,
@@ -70,13 +70,19 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    label: "Marketplace",
+    label: "Students",
     items: [
       {
-        icon: <Store />,
-        name: "Sellers",
-        path: "/sellers",
-        permission: "seller:read",
+        icon: <Users />,
+        name: "Students",
+        path: "/students",
+        permission: "student:read",
+      },
+      {
+        icon: <ClipboardList />,
+        name: "Enrollments",
+        path: "/enrollments",
+        permission: "enrollment:read",
       },
     ],
   },
