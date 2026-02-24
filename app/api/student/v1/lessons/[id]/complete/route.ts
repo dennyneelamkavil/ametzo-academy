@@ -6,12 +6,13 @@ import { handleApiError } from "@/server/errors/handleApiError";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const { id } = await params;
     const { studentId } = await requireStudentAuth(req);
 
-    return NextResponse.json(await completeStudentLesson(params.id, studentId));
+    return NextResponse.json(await completeStudentLesson(id, studentId));
   } catch (err) {
     return handleApiError(err);
   }
