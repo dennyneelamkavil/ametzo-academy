@@ -17,18 +17,18 @@ import { SortableTableHeader } from "@/components/common/SortableTableHeader";
 
 import { useAdminTable } from "@/hooks";
 
-import type { Category } from "@/lib/types";
+import type { Course } from "@/lib/types";
 import { deleteAction, toggleAction } from "@/lib/actions";
 
-type CategorySortKey = "name" | "createdAt" | "isActive";
+type CourseSortKey = "title" | "createdAt" | "isPublished" | "price";
 
-export default function CategoriesListClient() {
-  const [item, setItem] = useState<Category | null>(null);
-  const [toggleItem, setToggleItem] = useState<Category | null>(null);
-  const [isActive, setIsActive] = useState("true");
+export default function CoursesListClient() {
+  const [item, setItem] = useState<Course | null>(null);
+  const [toggleItem, setToggleItem] = useState<Course | null>(null);
+  const [isPublished, setIsPublished] = useState("");
 
   const {
-    data: categories,
+    data: courses,
     loading,
     error,
     pagination,
@@ -38,21 +38,21 @@ export default function CategoriesListClient() {
     sortState,
     onSortChange,
     refetch,
-  } = useAdminTable<Category, CategorySortKey>({
-    endpoint: "categories",
-    storageKey: "table:categories",
+  } = useAdminTable<Course, CourseSortKey>({
+    endpoint: "courses",
+    storageKey: "table:courses",
     defaultSort: { key: "createdAt", direction: "desc" },
     extraParams: () => ({
-      isActive,
+      isPublished,
     }),
   });
 
   async function confirmDelete() {
     if (!item) return;
 
-    const success = await deleteAction(`/api/admin/categories/${item.id}`, {
-      successMessage: "Category deleted successfully",
-      errorMessage: "Failed to delete category",
+    const success = await deleteAction(`/api/admin/courses/${item.id}`, {
+      successMessage: "Course deleted successfully",
+      errorMessage: "Failed to delete course",
     });
 
     if (success) refetch();
@@ -63,12 +63,12 @@ export default function CategoriesListClient() {
     if (!toggleItem) return;
 
     const success = await toggleAction(
-      `/api/admin/categories/${toggleItem.id}`,
-      { isActive: !toggleItem.isActive },
+      `/api/admin/courses/${toggleItem.id}`,
+      { isPublished: !toggleItem.isPublished },
       {
-        successMessage: "Category status updated",
-        errorMessage: "Failed to update category status",
-      }
+        successMessage: "Course status updated",
+        errorMessage: "Failed to update course status",
+      },
     );
 
     if (success) refetch();
@@ -77,12 +77,11 @@ export default function CategoriesListClient() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <ListHeader
-        title="Categories"
-        actionLabel="Create Category"
-        actionHref="/categories/create"
-        createPermission="category:create"
+        title="Courses"
+        actionLabel="Create Course"
+        actionHref="/courses/create"
+        createPermission="course:create"
       />
 
       <ListFilters
@@ -93,38 +92,36 @@ export default function CategoriesListClient() {
         }}
         onClear={() => {
           setSearch("");
-          setIsActive("");
+          setIsPublished("");
           setPage(1);
         }}
-        disableClear={!search && !isActive}
+        disableClear={!search && !isPublished}
       >
         <div className="w-full sm:max-w-xs">
           <Select
             options={[
               { value: "", label: "All" },
-              { value: "true", label: "Active" },
-              { value: "false", label: "Inactive" },
+              { value: "true", label: "Published" },
+              { value: "false", label: "Unpublished" },
             ]}
-            value={isActive}
-            placeholder="Select status"
-            onChange={(value) => {
+            value={isPublished}
+            onChange={(v) => {
               setPage(1);
-              setIsActive(value);
+              setIsPublished(v);
             }}
           />
         </div>
       </ListFilters>
 
-      {/* Card */}
       <div className="rounded-lg border border-gray-200 bg-white shadow-theme-xs dark:border-gray-800 dark:bg-gray-900">
         <div className="overflow-x-auto">
           <table className="w-full table-auto">
             <thead className="border-b border-gray-200 dark:border-gray-800">
               <tr>
                 <th className="px-5 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">
-                  <SortableTableHeader<CategorySortKey>
-                    columnKey="name"
-                    label="Name"
+                  <SortableTableHeader<CourseSortKey>
+                    columnKey="title"
+                    label="Title"
                     activeKey={sortState.key}
                     direction={sortState.direction}
                     onSort={onSortChange}
@@ -134,8 +131,20 @@ export default function CategoriesListClient() {
                   Image
                 </th>
                 <th className="px-5 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">
-                  <SortableTableHeader<CategorySortKey>
-                    columnKey="isActive"
+                  Level
+                </th>
+                <th className="px-5 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">
+                  <SortableTableHeader<CourseSortKey>
+                    columnKey="price"
+                    label="Price"
+                    activeKey={sortState.key}
+                    direction={sortState.direction}
+                    onSort={onSortChange}
+                  />
+                </th>
+                <th className="px-5 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">
+                  <SortableTableHeader<CourseSortKey>
+                    columnKey="isPublished"
                     label="Status"
                     activeKey={sortState.key}
                     direction={sortState.direction}
@@ -143,7 +152,7 @@ export default function CategoriesListClient() {
                   />
                 </th>
                 <th className="px-5 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">
-                  <SortableTableHeader<CategorySortKey>
+                  <SortableTableHeader<CourseSortKey>
                     columnKey="createdAt"
                     label="Created"
                     activeKey={sortState.key}
@@ -159,51 +168,59 @@ export default function CategoriesListClient() {
 
             <tbody>
               {loading ? (
-                <TableSkeleton columns={5} />
+                <TableSkeleton columns={6} />
               ) : error ? (
-                <ListError error={error} columns={5} />
-              ) : categories.length === 0 ? (
+                <ListError error={error} columns={6} />
+              ) : courses.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     className="px-5 py-6 text-center text-gray-800 dark:text-white/90"
                   >
-                    No categories found
+                    No courses found
                   </td>
                 </tr>
               ) : (
-                categories.map((category) => (
+                courses.map((course) => (
                   <tr
-                    key={category.id}
+                    key={course.id}
                     className="border-b border-gray-200 dark:border-gray-800"
                   >
                     <td className="px-5 py-4 font-mono text-sm text-gray-800 dark:text-white/90">
-                      {category.name}
+                      {course.title}
                     </td>
                     <td className="px-5 py-4 text-sm text-gray-800 dark:text-white/90">
-                      <Image
-                        src={category.image.url}
-                        alt={category.name}
-                        width={50}
-                        height={50}
-                        className="rounded object-cover"
-                      />
+                      {course.image && (
+                        <Image
+                          src={course.image.url}
+                          alt={course.title}
+                          width={50}
+                          height={50}
+                          className="rounded"
+                        />
+                      )}
                     </td>
                     <td className="px-5 py-4 text-sm text-gray-800 dark:text-white/90">
-                      {category.isActive ? "Active" : "Inactive"}
+                      {course.level}
                     </td>
                     <td className="px-5 py-4 text-sm text-gray-800 dark:text-white/90">
-                      {new Date(category.createdAt).toLocaleDateString()}
+                      ₹{course.price}
+                    </td>
+                    <td className="px-5 py-4 text-sm text-gray-800 dark:text-white/90">
+                      {course.isPublished ? "Published" : "Draft"}
+                    </td>
+                    <td className="px-5 py-4 text-sm text-gray-800 dark:text-white/90">
+                      {new Date(course.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-5 py-4 text-right">
                       <ListActions
-                        viewHref={`/categories/${category.id}`}
-                        onToggle={() => setToggleItem(category)}
-                        editHref={`/categories/${category.id}/edit`}
-                        isActive={category.isActive}
-                        onDelete={() => setItem(category)}
-                        editPermission="category:update"
-                        deletePermission="category:delete"
+                        viewHref={`/courses/${course.id}`}
+                        editHref={`/courses/${course.id}/edit`}
+                        onDelete={() => setItem(course)}
+                        onToggle={() => setToggleItem(course)}
+                        isActive={course.isPublished}
+                        editPermission="course:update"
+                        deletePermission="course:delete"
                       />
                     </td>
                   </tr>
@@ -213,7 +230,6 @@ export default function CategoriesListClient() {
           </table>
         </div>
 
-        {/* Pagination */}
         {pagination && pagination.totalPages > 1 && (
           <div className="flex justify-end p-4">
             <Pagination
@@ -226,29 +242,30 @@ export default function CategoriesListClient() {
       </div>
 
       <AlertModal
-        isOpen={!!item?.id}
+        isOpen={!!item}
         variant="danger"
-        title={`Delete Category: ${item?.name}?`}
-        message="If you just want to hide this category from users, consider marking it as inactive instead."
+        title={`Delete Course: ${item?.title}?`}
+        message="If you just want to hide this course from students, consider unpublishing it instead."
         confirmText="Delete"
         onClose={() => setItem(null)}
         onConfirm={confirmDelete}
-        secondaryText="Deactivate Instead"
+        secondaryText="Unpublish Instead"
         onSecondary={() => {
           setToggleItem(item);
           setItem(null);
         }}
       />
+
       <AlertModal
         isOpen={!!toggleItem}
         variant="warning"
-        title={`${toggleItem?.isActive ? "Deactivate" : "Activate"} Category: ${
-          toggleItem?.name
-        }?`}
+        title={`${
+          toggleItem?.isPublished ? "Unpublish" : "Publish"
+        } Course: ${toggleItem?.title}?`}
         message={`This action will ${
-          toggleItem?.isActive ? "deactivate" : "activate"
-        } this category.`}
-        confirmText={toggleItem?.isActive ? "Deactivate" : "Activate"}
+          toggleItem?.isPublished ? "unpublish" : "publish"
+        } this course.`}
+        confirmText={toggleItem?.isPublished ? "Unpublish" : "Publish"}
         onClose={() => setToggleItem(null)}
         onConfirm={confirmToggleStatus}
       />

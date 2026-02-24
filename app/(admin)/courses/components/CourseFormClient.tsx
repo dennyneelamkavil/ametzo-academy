@@ -15,6 +15,7 @@ import {
   TextArea,
   FileInput,
   Switch,
+  Select,
   FormSEOSection,
 } from "@/components/form";
 import FormSkeleton from "@/components/skeletons/FormSkeleton";
@@ -23,28 +24,45 @@ import { useFieldErrors, useScrollToTop } from "@/hooks";
 
 import { uploadMedia } from "@/lib/uploadMedia";
 import { formatSlug } from "@/lib/utils";
-import type { Media, Seo } from "@/lib/types";
 
-type Fields = "name" | "slug" | "image";
+import type { Media, Seo, CategoryBase } from "@/lib/types";
+
+type Fields =
+  | "title"
+  | "slug"
+  | "category"
+  | "image"
+  | "price"
+  | "durationHours";
 
 type Props = {
   mode: "create" | "edit";
   id?: string;
 };
 
-export default function CategoryFormClient({ mode, id }: Props) {
+export default function CourseFormClient({ mode, id }: Props) {
   const router = useRouter();
 
-  const [name, setName] = useState("");
+  const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
-  const [seo, setSeo] = useState<Seo>({});
-  const [uploadingSeoImg, setUploadingSeoImg] = useState(false);
+
+  const [category, setCategory] = useState("");
+  const [categoryOptions, setCategoryOptions] = useState<
+    { value: string; label: string }[]
+  >([]);
+
+  const [level, setLevel] = useState("Beginner");
+  const [durationHours, setDurationHours] = useState("");
+  const [price, setPrice] = useState("");
 
   const [image, setImage] = useState<Media | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  const [isActive, setIsActive] = useState(true);
+  const [seo, setSeo] = useState<Seo>({});
+  const [uploadingSeoImg, setUploadingSeoImg] = useState(false);
+
+  const [isPublished, setIsPublished] = useState(false);
 
   const [loading, setLoading] = useState(mode === "edit");
   const [saving, setSaving] = useState(false);
@@ -57,33 +75,64 @@ export default function CategoryFormClient({ mode, id }: Props) {
 
   useScrollToTop(error || fieldErrors);
 
-  const fetchCategory = useCallback(async () => {
+  /* ================= LOAD CATEGORIES ================= */
+
+  useEffect(() => {
+    async function loadCategories() {
+      try {
+        const res = await fetch("/api/admin/categories?all=true");
+        const data = await res.json();
+
+        const options = data.data.map((cat: CategoryBase) => ({
+          value: cat.id,
+          label: cat.name,
+        }));
+
+        setCategoryOptions(options);
+      } catch {
+        setCategoryOptions([]);
+      }
+    }
+
+    loadCategories();
+  }, []);
+
+  /* ================= LOAD COURSE ================= */
+
+  const fetchCourse = useCallback(async () => {
     if (!id) return;
 
     try {
-      const res = await fetch(`/api/admin/categories/${id}`, {
+      const res = await fetch(`/api/admin/courses/${id}`, {
         cache: "no-store",
       });
 
-      if (!res.ok) throw new Error("Failed to load category");
+      if (!res.ok) throw new Error("Failed to load course");
 
       const data = await res.json();
-      setName(data.name);
+
+      setTitle(data.title);
       setSlug(data.slug);
-      setImage(data.image);
       setDescription(data.description ?? "");
+      setCategory(data.category);
+      setLevel(data.level ?? "Beginner");
+      setDurationHours(String(data.durationHours ?? ""));
+      setPrice(String(data.price ?? ""));
+      setImage(data.image ?? null);
       setSeo(data.seo ?? {});
-      setIsActive(data.isActive);
+      setIsPublished(data.isPublished);
     } catch (err: any) {
-      setEditError(err.message ?? "Failed to load category");
+      setEditError(err.message ?? "Failed to load course");
     } finally {
       setLoading(false);
     }
   }, [id]);
 
   useEffect(() => {
-    if (mode === "edit") fetchCategory();
-  }, [mode, fetchCategory]);
+    if (mode === "edit") fetchCourse();
+  }, [mode, fetchCourse]);
+
+  /* ================= HANDLERS ================= */
 
   const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSlug(formatSlug(e.target.value));
@@ -100,19 +149,20 @@ export default function CategoryFormClient({ mode, id }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
     setSaving(true);
     setError(null);
     clearAllFieldErrors();
 
     let hasError = false;
 
-    if (!name) {
-      setFieldError("name", "Name is required");
+    if (!title) {
+      setFieldError("title", "Title is required");
       hasError = true;
     }
 
-    if (mode === "edit" && !slug) {
-      setFieldError("slug", "Slug is required");
+    if (!category) {
+      setFieldError("category", "Category is required");
       hasError = true;
     }
 
@@ -128,19 +178,21 @@ export default function CategoryFormClient({ mode, id }: Props) {
 
     try {
       const res = await fetch(
-        mode === "create"
-          ? "/api/admin/categories"
-          : `/api/admin/categories/${id}`,
+        mode === "create" ? "/api/admin/courses" : `/api/admin/courses/${id}`,
         {
           method: mode === "create" ? "POST" : "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            name,
+            title,
             slug,
-            image,
             description,
+            category,
+            level,
+            durationHours: durationHours ? Number(durationHours) : undefined,
+            price: price ? Number(price) : 0,
+            image,
             seo,
-            isActive,
+            isPublished,
           }),
         },
       );
@@ -150,7 +202,7 @@ export default function CategoryFormClient({ mode, id }: Props) {
         throw new Error(data?.error ?? "Save failed");
       }
 
-      router.push(mode === "create" ? "/categories" : `/categories/${id}`);
+      router.push(mode === "create" ? "/courses" : `/courses/${id}`);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -160,11 +212,11 @@ export default function CategoryFormClient({ mode, id }: Props) {
 
   const hasErrors = Object.values(fieldErrors).some(Boolean) || !!error;
 
+  /* ================= RENDER ================= */
+
   return (
     <div className="space-y-6">
-      <FormHeader
-        title={mode === "create" ? "Create Category" : "Edit Category"}
-      />
+      <FormHeader title={mode === "create" ? "Create Course" : "Edit Course"} />
 
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-theme-xs dark:border-gray-800 dark:bg-gray-900">
         {loading ? (
@@ -176,18 +228,18 @@ export default function CategoryFormClient({ mode, id }: Props) {
             {error && <FormError error={error} />}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField label="Category Name" required htmlFor="name">
+              <FormField label="Course Title" required htmlFor="title">
                 <Input
-                  id="name"
-                  placeholder="Frontend, Backend, DevOps..."
-                  value={name}
+                  id="title"
+                  placeholder="Course Title"
+                  value={title}
                   onChange={(e) => {
-                    clearFieldError("name");
+                    clearFieldError("title");
                     setError(null);
-                    setName(e.target.value);
+                    setTitle(e.target.value);
                   }}
-                  error={!!fieldErrors.name}
-                  hint={fieldErrors.name}
+                  error={!!fieldErrors.title}
+                  hint={fieldErrors.title}
                   autoFocus
                 />
               </FormField>
@@ -207,7 +259,60 @@ export default function CategoryFormClient({ mode, id }: Props) {
                   />
                 </FormField>
               )}
+
+              <FormField label="Category" required>
+                <Select
+                  options={categoryOptions}
+                  value={category}
+                  placeholder="Select category"
+                  onChange={(value) => {
+                    clearFieldError("category");
+                    setError(null);
+                    setCategory(value);
+                  }}
+                  error={!!fieldErrors.category}
+                  hint={fieldErrors.category}
+                />
+              </FormField>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <FormField label="Level">
+                <Select
+                  options={[
+                    { value: "Beginner", label: "Beginner" },
+                    { value: "Intermediate", label: "Intermediate" },
+                    { value: "Advanced", label: "Advanced" },
+                  ]}
+                  value={level}
+                  onChange={setLevel}
+                />
+              </FormField>
+
+              <FormField label="Duration (Hours)">
+                <Input
+                  type="number"
+                  value={durationHours}
+                  onChange={(e) => setDurationHours(e.target.value)}
+                />
+              </FormField>
+
+              <FormField label="Price (₹)">
+                <Input
+                  type="number"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                />
+              </FormField>
+            </div>
+
+            <FormField label="Description">
+              <TextArea
+                rows={4}
+                value={description}
+                onChange={setDescription}
+              />
+            </FormField>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
@@ -226,10 +331,7 @@ export default function CategoryFormClient({ mode, id }: Props) {
                         setUploading(true);
                         clearFieldError("image");
                         setError(null);
-                        const media = await uploadMedia(
-                          file,
-                          "temp/categories",
-                        );
+                        const media = await uploadMedia(file, "temp/courses");
                         setImage(media);
                       } catch (err: any) {
                         setFieldError("image", err.message ?? "Upload failed");
@@ -246,7 +348,7 @@ export default function CategoryFormClient({ mode, id }: Props) {
                 {image && (
                   <Image
                     src={image.url}
-                    alt="Category preview"
+                    alt="Preview"
                     width={120}
                     height={120}
                     className="rounded object-cover border dark:border-gray-800"
@@ -258,7 +360,7 @@ export default function CategoryFormClient({ mode, id }: Props) {
                 <div className="space-y-4">
                   <FormField label="Image Alt Text">
                     <Input
-                      placeholder="e.g. category image"
+                      placeholder="e.g. course image"
                       value={image.alt ?? ""}
                       onChange={(e) =>
                         setImage((prev) =>
@@ -284,24 +386,13 @@ export default function CategoryFormClient({ mode, id }: Props) {
               )}
             </div>
 
-            <FormField label="Description" htmlFor="description">
-              <TextArea
-                rows={3}
-                placeholder="A brief description about this category."
-                value={description}
-                onChange={setDescription}
+            <FormField label="Publish Course">
+              <Switch
+                label={isPublished ? "Published" : "Draft"}
+                defaultChecked={isPublished}
+                onChange={setIsPublished}
               />
             </FormField>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField label="Category Status">
-                <Switch
-                  label={isActive ? "Active" : "Inactive"}
-                  defaultChecked={isActive}
-                  onChange={setIsActive}
-                />
-              </FormField>
-            </div>
 
             <Authorized
               permission={mode === "create" ? "seo:create" : "seo:update"}
@@ -316,14 +407,13 @@ export default function CategoryFormClient({ mode, id }: Props) {
               />
             </Authorized>
 
-            {/* Actions */}
             <FormActions
               primaryLabel={
                 saving
                   ? "Saving..."
                   : mode === "create"
-                    ? "Create Category"
-                    : "Update Category"
+                    ? "Create Course"
+                    : "Update Course"
               }
               primaryDisabled={saving || uploading || hasErrors}
               backLabel="Cancel"
