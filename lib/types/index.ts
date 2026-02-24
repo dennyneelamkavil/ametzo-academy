@@ -10,19 +10,12 @@ export type { Seo } from "./seo";
 export type { PageSeo } from "./page-seo";
 
 export type { Category, CategoryBase } from "./category";
-export type { SubCategory, SubCategoryBase } from "./subcategory";
-export type { Product, ProductBase } from "./product";
-
-export type {
-  ProductInventory,
-  ProductInventoryBase,
-} from "./product-inventory";
-
-export type { Review, ReviewBase } from "./review";
+export type { Course, CourseBase } from "./course";
+export type { Lesson, LessonBase } from "./lesson";
+export type { Enrollment, EnrollmentBase } from "./enrollment";
 
 export type { Permission, PermissionBase } from "./permission";
 export type { Role, RoleBase, RoleWithPermissionKeys } from "./role";
 
 export type { User, UserBase } from "./user";
-
-export type { Seller, SellerBase } from "./seller";
+export type { Student, StudentBase } from "./student";
