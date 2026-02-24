@@ -9,17 +9,13 @@ export interface Media {
 export type TempMediaFolder =
   | "temp/categories"
   | "temp/subcategories"
-  | "temp/products/covers"
-  | "temp/products/images"
-  | "temp/products/videos"
+  | "temp/courses"
   | "temp/seo";
 
 export type FinalMediaFolder =
   | "categories"
   | "subcategories"
-  | "products/covers"
-  | "products/images"
-  | "products/videos"
+  | "courses"
   | "seo";
 
 export type MediaFolder = TempMediaFolder | FinalMediaFolder;
