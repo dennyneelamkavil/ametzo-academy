@@ -1,6 +1,7 @@
 type SortType =
   | "category"
   | "course"
+  | "lesson"
   | "user"
   | "permission"
   | "role"
@@ -9,6 +10,7 @@ const SORT_FIELD_MAP: Record<SortType, Set<string>> = {
   user: new Set(["username", "fullname", "isActive", "createdAt"]),
   category: new Set(["name", "isActive", "createdAt"]),
   course: new Set(["title", "price", "isPublished", "createdAt"]),
+  lesson: new Set(["title", "createdAt"]),
   permission: new Set(["key", "createdAt"]),
   role: new Set(["name", "isSuperAdmin", "createdAt"]),
   pageseo: new Set(["pageKey", "isActive", "createdAt"]),
