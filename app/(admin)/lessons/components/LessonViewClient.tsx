@@ -2,113 +2,107 @@
 
 import { useRouter } from "next/navigation";
 
-import { Authorized } from "@/components/auth/Authorized";
-
 import { FormHeader, FormError } from "@/components/form";
 import FormSkeleton from "@/components/skeletons/FormSkeleton";
 
-import {
-  ViewActions,
-  ViewBadge,
-  ViewField,
-  ViewImage,
-  ViewSection,
-  ViewSEOSection,
-} from "@/components/view";
+import { ViewActions, ViewField, ViewSection } from "@/components/view";
 
 import { useAdminEntity } from "@/hooks";
 
-import type { Category } from "@/lib/types";
+import type { Lesson } from "@/lib/types";
 
 type Props = {
   id: string;
 };
 
-export default function CategoryViewClient({ id }: Props) {
+export default function LessonViewClient({ id }: Props) {
   const router = useRouter();
 
   const {
-    data: category,
+    data: lesson,
     loading,
     error,
-  } = useAdminEntity<Category>({
-    endpoint: "categories",
+  } = useAdminEntity<Lesson>({
+    endpoint: "lessons",
     id,
   });
 
   return (
     <div className="space-y-6">
-      <FormHeader title="View Category" />
+      <FormHeader title="View Lesson" />
 
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-theme-xs dark:border-gray-800 dark:bg-gray-900">
         {loading ? (
           <FormSkeleton />
         ) : error ? (
           <FormError error={error} />
-        ) : !category ? null : (
+        ) : !lesson ? null : (
           <div className="space-y-6">
+            {/* Sticky Overview */}
             <div className="sm:sticky top-30 z-10 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-800/40">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                <ViewField label="Category" value={category.name} mono />
-                <ViewField label="Slug" value={category.slug} mono />
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <ViewField label="Title" value={lesson.title} mono />
 
-                <div>
-                  <p className="text-sm text-gray-500 mb-2">Status</p>
-                  <ViewBadge
-                    label={category.isActive ? "Active" : "Inactive"}
-                    variant={category.isActive ? "success" : "danger"}
-                  />
-                </div>
+                <ViewField
+                  label="Course"
+                  value={
+                    typeof lesson.course === "object"
+                      ? lesson.course.title
+                      : lesson.course
+                  }
+                />
+
+                <ViewField label="Order" value={lesson.order ?? 0} />
+
+                <ViewField
+                  label="Duration (Minutes)"
+                  value={lesson.durationMinutes ?? 0}
+                />
               </div>
             </div>
 
-            <ViewSection>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="space-y-6">
-                  <ViewImage
-                    label="Category Image"
-                    src={category.image.url}
-                    alt={category.image.alt ?? category.name}
-                    caption={category.image.caption}
-                    size={160}
-                  />
-                </div>
-              </div>
-            </ViewSection>
+            {/* Video Section */}
+            {lesson.videoUrl && (
+              <ViewSection>
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-500">Lesson Video</p>
 
-            {category.description && (
-              <div className="mt-6">
-                <ViewField label="Description" value={category.description} />
-              </div>
+                  <video
+                    src={lesson.videoUrl.url}
+                    controls
+                    className="w-full max-w-3xl rounded-lg border dark:border-gray-800"
+                  />
+
+                  {lesson.videoUrl.caption && (
+                    <p className="text-sm text-gray-500">
+                      {lesson.videoUrl.caption}
+                    </p>
+                  )}
+                </div>
+              </ViewSection>
             )}
 
-            <Authorized permission="seo:read">
-              <ViewSEOSection
-                seo={category.seo}
-                collapsible
-                defaultOpen={false}
-              />
-            </Authorized>
-
+            {/* Meta */}
             <ViewSection>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <ViewField
                   label="Created At"
-                  value={new Date(category.createdAt).toLocaleString()}
+                  value={new Date(lesson.createdAt).toLocaleString()}
                   mono
                 />
                 <ViewField
                   label="Last Updated"
-                  value={new Date(category.updatedAt).toLocaleString()}
+                  value={new Date(lesson.updatedAt).toLocaleString()}
                   mono
                 />
               </div>
             </ViewSection>
 
+            {/* Actions */}
             <ViewActions
-              primaryLabel="Edit Category"
-              primaryPermission="category:update"
-              onPrimary={() => router.push(`/categories/${id}/edit`)}
+              primaryLabel="Edit Lesson"
+              primaryPermission="lesson:update"
+              onPrimary={() => router.push(`/lessons/${id}/edit`)}
               onBack={() => router.back()}
             />
           </div>

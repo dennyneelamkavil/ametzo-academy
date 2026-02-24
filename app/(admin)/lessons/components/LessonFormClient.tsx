@@ -2,9 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
-
-import { Authorized } from "@/components/auth/Authorized";
 
 import {
   FormHeader,
@@ -12,39 +9,37 @@ import {
   FormError,
   FormActions,
   Input,
-  TextArea,
   FileInput,
-  Switch,
-  FormSEOSection,
+  Select,
 } from "@/components/form";
 import FormSkeleton from "@/components/skeletons/FormSkeleton";
 
 import { useFieldErrors, useScrollToTop } from "@/hooks";
 
 import { uploadMedia } from "@/lib/uploadMedia";
-import { formatSlug } from "@/lib/utils";
-import type { Media, Seo } from "@/lib/types";
+import type { Media, CourseBase } from "@/lib/types";
 
-type Fields = "name" | "slug" | "image";
+type Fields = "title" | "course" | "videoUrl";
 
 type Props = {
   mode: "create" | "edit";
   id?: string;
 };
 
-export default function CategoryFormClient({ mode, id }: Props) {
+export default function LessonFormClient({ mode, id }: Props) {
   const router = useRouter();
 
-  const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
-  const [description, setDescription] = useState("");
-  const [seo, setSeo] = useState<Seo>({});
-  const [uploadingSeoImg, setUploadingSeoImg] = useState(false);
+  const [title, setTitle] = useState("");
+  const [course, setCourse] = useState("");
+  const [courseOptions, setCourseOptions] = useState<
+    { value: string; label: string }[]
+  >([]);
 
-  const [image, setImage] = useState<Media | null>(null);
+  const [videoUrl, setVideoUrl] = useState<Media | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  const [isActive, setIsActive] = useState(true);
+  const [durationMinutes, setDurationMinutes] = useState("");
+  const [order, setOrder] = useState("");
 
   const [loading, setLoading] = useState(mode === "edit");
   const [saving, setSaving] = useState(false);
@@ -57,67 +52,81 @@ export default function CategoryFormClient({ mode, id }: Props) {
 
   useScrollToTop(error || fieldErrors);
 
-  const fetchCategory = useCallback(async () => {
+  /* ================= LOAD COURSES ================= */
+
+  useEffect(() => {
+    async function loadCourses() {
+      try {
+        const res = await fetch("/api/admin/courses?all=true");
+        const data = await res.json();
+
+        const options = data.data.map((c: CourseBase) => ({
+          value: c.id,
+          label: c.title,
+        }));
+
+        setCourseOptions(options);
+      } catch {
+        setCourseOptions([]);
+      }
+    }
+
+    loadCourses();
+  }, []);
+
+  /* ================= LOAD LESSON ================= */
+
+  const fetchLesson = useCallback(async () => {
     if (!id) return;
 
     try {
-      const res = await fetch(`/api/admin/categories/${id}`, {
+      const res = await fetch(`/api/admin/lessons/${id}`, {
         cache: "no-store",
       });
 
-      if (!res.ok) throw new Error("Failed to load category");
+      if (!res.ok) throw new Error("Failed to load lesson");
 
       const data = await res.json();
-      setName(data.name);
-      setSlug(data.slug);
-      setImage(data.image);
-      setDescription(data.description ?? "");
-      setSeo(data.seo ?? {});
-      setIsActive(data.isActive);
+
+      setTitle(data.title);
+      setCourse(data.course);
+      setVideoUrl(data.videoUrl ?? null);
+      setDurationMinutes(String(data.durationMinutes ?? ""));
+      setOrder(String(data.order ?? ""));
     } catch (err: any) {
-      setEditError(err.message ?? "Failed to load category");
+      setEditError(err.message ?? "Failed to load lesson");
     } finally {
       setLoading(false);
     }
   }, [id]);
 
   useEffect(() => {
-    if (mode === "edit") fetchCategory();
-  }, [mode, fetchCategory]);
+    if (mode === "edit") fetchLesson();
+  }, [mode, fetchLesson]);
 
-  const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSlug(formatSlug(e.target.value));
-  };
-
-  async function handleUploadOgImage(file: File) {
-    setUploadingSeoImg(true);
-    try {
-      return await uploadMedia(file, "temp/seo");
-    } finally {
-      setUploadingSeoImg(false);
-    }
-  }
+  /* ================= SUBMIT ================= */
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
     setSaving(true);
     setError(null);
     clearAllFieldErrors();
 
     let hasError = false;
 
-    if (!name) {
-      setFieldError("name", "Name is required");
+    if (!title) {
+      setFieldError("title", "Title is required");
       hasError = true;
     }
 
-    if (mode === "edit" && !slug) {
-      setFieldError("slug", "Slug is required");
+    if (!course) {
+      setFieldError("course", "Course is required");
       hasError = true;
     }
 
-    if (!image) {
-      setFieldError("image", "Image is required");
+    if (!videoUrl) {
+      setFieldError("videoUrl", "Video is required");
       hasError = true;
     }
 
@@ -128,19 +137,18 @@ export default function CategoryFormClient({ mode, id }: Props) {
 
     try {
       const res = await fetch(
-        mode === "create"
-          ? "/api/admin/categories"
-          : `/api/admin/categories/${id}`,
+        mode === "create" ? "/api/admin/lessons" : `/api/admin/lessons/${id}`,
         {
           method: mode === "create" ? "POST" : "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            name,
-            slug,
-            image,
-            description,
-            seo,
-            isActive,
+            title,
+            course,
+            videoUrl,
+            durationMinutes: durationMinutes
+              ? Number(durationMinutes)
+              : undefined,
+            order: order ? Number(order) : undefined,
           }),
         },
       );
@@ -150,7 +158,7 @@ export default function CategoryFormClient({ mode, id }: Props) {
         throw new Error(data?.error ?? "Save failed");
       }
 
-      router.push(mode === "create" ? "/categories" : `/categories/${id}`);
+      router.push(mode === "create" ? "/lessons" : `/lessons/${id}`);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -162,9 +170,7 @@ export default function CategoryFormClient({ mode, id }: Props) {
 
   return (
     <div className="space-y-6">
-      <FormHeader
-        title={mode === "create" ? "Create Category" : "Edit Category"}
-      />
+      <FormHeader title={mode === "create" ? "Create Lesson" : "Edit Lesson"} />
 
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-theme-xs dark:border-gray-800 dark:bg-gray-900">
         {loading ? (
@@ -176,47 +182,45 @@ export default function CategoryFormClient({ mode, id }: Props) {
             {error && <FormError error={error} />}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField label="Category Name" required htmlFor="name">
+              <FormField label="Lesson Title" required htmlFor="title">
                 <Input
-                  id="name"
-                  placeholder="Frontend, Backend, DevOps..."
-                  value={name}
+                  id="title"
+                  placeholder="Enter lesson title"
+                  value={title}
                   onChange={(e) => {
-                    clearFieldError("name");
+                    clearFieldError("title");
                     setError(null);
-                    setName(e.target.value);
+                    setTitle(e.target.value);
                   }}
-                  error={!!fieldErrors.name}
-                  hint={fieldErrors.name}
+                  error={!!fieldErrors.title}
+                  hint={fieldErrors.title}
                   autoFocus
                 />
               </FormField>
 
-              {mode === "edit" && (
-                <FormField label="Slug" required htmlFor="slug">
-                  <Input
-                    id="slug"
-                    value={slug}
-                    onChange={(e) => {
-                      clearFieldError("slug");
-                      setError(null);
-                      handleSlugChange(e);
-                    }}
-                    error={!!fieldErrors.slug}
-                    hint={fieldErrors.slug}
-                  />
-                </FormField>
-              )}
+              <FormField label="Course" required>
+                <Select
+                  options={courseOptions}
+                  value={course}
+                  placeholder="Select course"
+                  onChange={(value) => {
+                    clearFieldError("course");
+                    setError(null);
+                    setCourse(value);
+                  }}
+                  error={!!fieldErrors.course}
+                  hint={fieldErrors.course}
+                />
+              </FormField>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
-                <FormField label="Image" required htmlFor="image">
+                <FormField label="Lesson Video" required htmlFor="videoUrl">
                   <FileInput
-                    id="image"
-                    accept="image/*"
-                    error={!!fieldErrors.image}
-                    hint={fieldErrors.image}
+                    accept="video/*"
+                    error={!!fieldErrors.videoUrl}
+                    hint={fieldErrors.videoUrl}
                     disabled={uploading}
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
@@ -224,15 +228,15 @@ export default function CategoryFormClient({ mode, id }: Props) {
 
                       try {
                         setUploading(true);
-                        clearFieldError("image");
+                        clearFieldError("videoUrl");
                         setError(null);
-                        const media = await uploadMedia(
-                          file,
-                          "temp/categories",
-                        );
-                        setImage(media);
+                        const media = await uploadMedia(file, "temp/lessons");
+                        setVideoUrl(media);
                       } catch (err: any) {
-                        setFieldError("image", err.message ?? "Upload failed");
+                        setFieldError(
+                          "videoUrl",
+                          err.message ?? "Upload failed",
+                        );
                       } finally {
                         setUploading(false);
                       }
@@ -243,38 +247,36 @@ export default function CategoryFormClient({ mode, id }: Props) {
                   )}
                 </FormField>
 
-                {image && (
-                  <Image
-                    src={image.url}
-                    alt="Category preview"
-                    width={120}
-                    height={120}
-                    className="rounded object-cover border dark:border-gray-800"
+                {videoUrl && (
+                  <video
+                    src={videoUrl.url}
+                    controls
+                    className="w-[120px] rounded"
                   />
                 )}
               </div>
 
-              {image && (
+              {videoUrl && (
                 <div className="space-y-4">
                   <FormField label="Image Alt Text">
                     <Input
                       placeholder="e.g. category image"
-                      value={image.alt ?? ""}
+                      value={videoUrl.alt ?? ""}
                       onChange={(e) =>
-                        setImage((prev) =>
+                        setVideoUrl((prev) =>
                           prev ? { ...prev, alt: e.target.value } : prev,
                         )
                       }
-                      hint="Describe the image for SEO & accessibility"
+                      hint="Describe the video for SEO & accessibility"
                     />
                   </FormField>
 
-                  <FormField label="Image Caption (optional)">
+                  <FormField label="Video Caption (optional)">
                     <Input
-                      placeholder="Optional caption shown below the image"
-                      value={image.caption ?? ""}
+                      placeholder="Optional caption shown below the video"
+                      value={videoUrl.caption ?? ""}
                       onChange={(e) =>
-                        setImage((prev) =>
+                        setVideoUrl((prev) =>
                           prev ? { ...prev, caption: e.target.value } : prev,
                         )
                       }
@@ -284,46 +286,31 @@ export default function CategoryFormClient({ mode, id }: Props) {
               )}
             </div>
 
-            <FormField label="Description" htmlFor="description">
-              <TextArea
-                rows={3}
-                placeholder="A brief description about this category."
-                value={description}
-                onChange={setDescription}
-              />
-            </FormField>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField label="Category Status">
-                <Switch
-                  label={isActive ? "Active" : "Inactive"}
-                  defaultChecked={isActive}
-                  onChange={setIsActive}
+              <FormField label="Duration (Minutes)">
+                <Input
+                  type="number"
+                  value={durationMinutes}
+                  onChange={(e) => setDurationMinutes(e.target.value)}
+                />
+              </FormField>
+
+              <FormField label="Order">
+                <Input
+                  type="number"
+                  value={order}
+                  onChange={(e) => setOrder(e.target.value)}
                 />
               </FormField>
             </div>
 
-            <Authorized
-              permission={mode === "create" ? "seo:create" : "seo:update"}
-            >
-              <FormSEOSection
-                value={seo}
-                onChange={setSeo}
-                uploading={uploadingSeoImg}
-                onUploadOgImage={handleUploadOgImage}
-                collapsible
-                defaultOpen={false}
-              />
-            </Authorized>
-
-            {/* Actions */}
             <FormActions
               primaryLabel={
                 saving
                   ? "Saving..."
                   : mode === "create"
-                    ? "Create Category"
-                    : "Update Category"
+                    ? "Create Lesson"
+                    : "Update Lesson"
               }
               primaryDisabled={saving || uploading || hasErrors}
               backLabel="Cancel"

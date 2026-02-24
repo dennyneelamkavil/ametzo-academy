@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
+import { useEffect, useState } from "react";
 
 import AlertModal from "@/components/ui/alert/AlertModal";
 import {
@@ -17,18 +16,20 @@ import { SortableTableHeader } from "@/components/common/SortableTableHeader";
 
 import { useAdminTable } from "@/hooks";
 
-import type { Category } from "@/lib/types";
-import { deleteAction, toggleAction } from "@/lib/actions";
+import type { Lesson, CourseBase } from "@/lib/types";
+import { deleteAction } from "@/lib/actions";
 
-type CategorySortKey = "name" | "createdAt" | "isActive";
+type LessonSortKey = "title" | "order" | "createdAt";
 
-export default function CategoriesListClient() {
-  const [item, setItem] = useState<Category | null>(null);
-  const [toggleItem, setToggleItem] = useState<Category | null>(null);
-  const [isActive, setIsActive] = useState("true");
+export default function LessonsListClient() {
+  const [item, setItem] = useState<Lesson | null>(null);
+  const [courseFilter, setCourseFilter] = useState("");
+  const [courseOptions, setCourseOptions] = useState<
+    { value: string; label: string }[]
+  >([]);
 
   const {
-    data: categories,
+    data: lessons,
     loading,
     error,
     pagination,
@@ -38,51 +39,50 @@ export default function CategoriesListClient() {
     sortState,
     onSortChange,
     refetch,
-  } = useAdminTable<Category, CategorySortKey>({
-    endpoint: "categories",
-    storageKey: "table:categories",
-    defaultSort: { key: "createdAt", direction: "desc" },
+  } = useAdminTable<Lesson, LessonSortKey>({
+    endpoint: "lessons",
+    storageKey: "table:lessons",
+    defaultSort: { key: "order", direction: "asc" },
     extraParams: () => ({
-      isActive,
+      course: courseFilter,
     }),
   });
+
+  useEffect(() => {
+    async function loadCourses() {
+      const res = await fetch("/api/admin/courses?all=true");
+      const data = await res.json();
+
+      const options = data.data.map((c: CourseBase) => ({
+        value: c.id,
+        label: c.title,
+      }));
+
+      setCourseOptions(options);
+    }
+
+    loadCourses();
+  }, []);
 
   async function confirmDelete() {
     if (!item) return;
 
-    const success = await deleteAction(`/api/admin/categories/${item.id}`, {
-      successMessage: "Category deleted successfully",
-      errorMessage: "Failed to delete category",
+    const success = await deleteAction(`/api/admin/lessons/${item.id}`, {
+      successMessage: "Lesson deleted successfully",
+      errorMessage: "Failed to delete lesson",
     });
 
     if (success) refetch();
     setItem(null);
   }
 
-  async function confirmToggleStatus() {
-    if (!toggleItem) return;
-
-    const success = await toggleAction(
-      `/api/admin/categories/${toggleItem.id}`,
-      { isActive: !toggleItem.isActive },
-      {
-        successMessage: "Category status updated",
-        errorMessage: "Failed to update category status",
-      }
-    );
-
-    if (success) refetch();
-    setToggleItem(null);
-  }
-
   return (
     <div className="space-y-6">
-      {/* Header */}
       <ListHeader
-        title="Categories"
-        actionLabel="Create Category"
-        actionHref="/categories/create"
-        createPermission="category:create"
+        title="Lessons"
+        actionLabel="Create Lesson"
+        actionHref="/lessons/create"
+        createPermission="lesson:create"
       />
 
       <ListFilters
@@ -93,57 +93,54 @@ export default function CategoriesListClient() {
         }}
         onClear={() => {
           setSearch("");
-          setIsActive("");
+          setCourseFilter("");
           setPage(1);
         }}
-        disableClear={!search && !isActive}
+        disableClear={!search && !courseFilter}
       >
         <div className="w-full sm:max-w-xs">
           <Select
-            options={[
-              { value: "", label: "All" },
-              { value: "true", label: "Active" },
-              { value: "false", label: "Inactive" },
-            ]}
-            value={isActive}
-            placeholder="Select status"
-            onChange={(value) => {
+            options={[{ value: "", label: "All Courses" }, ...courseOptions]}
+            value={courseFilter}
+            onChange={(v) => {
               setPage(1);
-              setIsActive(value);
+              setCourseFilter(v);
             }}
           />
         </div>
       </ListFilters>
 
-      {/* Card */}
       <div className="rounded-lg border border-gray-200 bg-white shadow-theme-xs dark:border-gray-800 dark:bg-gray-900">
         <div className="overflow-x-auto">
           <table className="w-full table-auto">
             <thead className="border-b border-gray-200 dark:border-gray-800">
               <tr>
                 <th className="px-5 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">
-                  <SortableTableHeader<CategorySortKey>
-                    columnKey="name"
-                    label="Name"
+                  <SortableTableHeader<LessonSortKey>
+                    columnKey="title"
+                    label="Title"
                     activeKey={sortState.key}
                     direction={sortState.direction}
                     onSort={onSortChange}
                   />
                 </th>
                 <th className="px-5 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">
-                  Image
+                  Course
                 </th>
                 <th className="px-5 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">
-                  <SortableTableHeader<CategorySortKey>
-                    columnKey="isActive"
-                    label="Status"
+                  <SortableTableHeader<LessonSortKey>
+                    columnKey="order"
+                    label="Order"
                     activeKey={sortState.key}
                     direction={sortState.direction}
                     onSort={onSortChange}
                   />
                 </th>
                 <th className="px-5 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">
-                  <SortableTableHeader<CategorySortKey>
+                  Duration
+                </th>
+                <th className="px-5 py-3 text-left text-sm font-medium text-gray-500 dark:text-gray-400">
+                  <SortableTableHeader<LessonSortKey>
                     columnKey="createdAt"
                     label="Created"
                     activeKey={sortState.key}
@@ -162,48 +159,45 @@ export default function CategoriesListClient() {
                 <TableSkeleton columns={5} />
               ) : error ? (
                 <ListError error={error} columns={5} />
-              ) : categories.length === 0 ? (
+              ) : lessons.length === 0 ? (
                 <tr>
                   <td
                     colSpan={5}
                     className="px-5 py-6 text-center text-gray-800 dark:text-white/90"
                   >
-                    No categories found
+                    No lessons found
                   </td>
                 </tr>
               ) : (
-                categories.map((category) => (
+                lessons.map((lesson) => (
                   <tr
-                    key={category.id}
+                    key={lesson.id}
                     className="border-b border-gray-200 dark:border-gray-800"
                   >
                     <td className="px-5 py-4 font-mono text-sm text-gray-800 dark:text-white/90">
-                      {category.name}
+                      {lesson.title}
                     </td>
                     <td className="px-5 py-4 text-sm text-gray-800 dark:text-white/90">
-                      <Image
-                        src={category.image.url}
-                        alt={category.name}
-                        width={50}
-                        height={50}
-                        className="rounded object-cover"
-                      />
+                      {typeof lesson.course === "object"
+                        ? lesson.course.title
+                        : lesson.course}
                     </td>
                     <td className="px-5 py-4 text-sm text-gray-800 dark:text-white/90">
-                      {category.isActive ? "Active" : "Inactive"}
+                      {lesson.order}
                     </td>
                     <td className="px-5 py-4 text-sm text-gray-800 dark:text-white/90">
-                      {new Date(category.createdAt).toLocaleDateString()}
+                      {lesson.durationMinutes} min
+                    </td>
+                    <td className="px-5 py-4 text-sm text-gray-800 dark:text-white/90">
+                      {new Date(lesson.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-5 py-4 text-right">
                       <ListActions
-                        viewHref={`/categories/${category.id}`}
-                        onToggle={() => setToggleItem(category)}
-                        editHref={`/categories/${category.id}/edit`}
-                        isActive={category.isActive}
-                        onDelete={() => setItem(category)}
-                        editPermission="category:update"
-                        deletePermission="category:delete"
+                        viewHref={`/lessons/${lesson.id}`}
+                        editHref={`/lessons/${lesson.id}/edit`}
+                        onDelete={() => setItem(lesson)}
+                        editPermission="lesson:update"
+                        deletePermission="lesson:delete"
                       />
                     </td>
                   </tr>
@@ -213,7 +207,6 @@ export default function CategoriesListClient() {
           </table>
         </div>
 
-        {/* Pagination */}
         {pagination && pagination.totalPages > 1 && (
           <div className="flex justify-end p-4">
             <Pagination
@@ -226,31 +219,13 @@ export default function CategoriesListClient() {
       </div>
 
       <AlertModal
-        isOpen={!!item?.id}
+        isOpen={!!item}
         variant="danger"
-        title={`Delete Category: ${item?.name}?`}
-        message="If you just want to hide this category from users, consider marking it as inactive instead."
+        title={`Delete Lesson: ${item?.title}?`}
+        message="This remove the lesson permanently."
         confirmText="Delete"
         onClose={() => setItem(null)}
         onConfirm={confirmDelete}
-        secondaryText="Deactivate Instead"
-        onSecondary={() => {
-          setToggleItem(item);
-          setItem(null);
-        }}
-      />
-      <AlertModal
-        isOpen={!!toggleItem}
-        variant="warning"
-        title={`${toggleItem?.isActive ? "Deactivate" : "Activate"} Category: ${
-          toggleItem?.name
-        }?`}
-        message={`This action will ${
-          toggleItem?.isActive ? "deactivate" : "activate"
-        } this category.`}
-        confirmText={toggleItem?.isActive ? "Deactivate" : "Activate"}
-        onClose={() => setToggleItem(null)}
-        onConfirm={confirmToggleStatus}
       />
     </div>
   );
