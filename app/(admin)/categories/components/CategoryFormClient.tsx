@@ -179,7 +179,7 @@ export default function CategoryFormClient({ mode, id }: Props) {
               <FormField label="Category Name" required htmlFor="name">
                 <Input
                   id="name"
-                  placeholder="Toys"
+                  placeholder="Frontend, Backend, DevOps..."
                   value={name}
                   onChange={(e) => {
                     clearFieldError("name");
@@ -196,7 +196,6 @@ export default function CategoryFormClient({ mode, id }: Props) {
                 <FormField label="Slug" required htmlFor="slug">
                   <Input
                     id="slug"
-                    placeholder="toys"
                     value={slug}
                     onChange={(e) => {
                       clearFieldError("slug");
@@ -259,7 +258,7 @@ export default function CategoryFormClient({ mode, id }: Props) {
                 <div className="space-y-4">
                   <FormField label="Image Alt Text">
                     <Input
-                      placeholder="e.g. Toys category image"
+                      placeholder="e.g. category image"
                       value={image.alt ?? ""}
                       onChange={(e) =>
                         setImage((prev) =>
