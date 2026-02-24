@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: parsed.error.flatten() },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -32,9 +32,9 @@ export async function GET(req: Request) {
   try {
     await requirePermission([
       "category:read",
-      "subcategory:read",
-      "subcategory:create",
-      "subcategory:update",
+      "course:read",
+      "course:create",
+      "course:update",
     ]);
 
     const { searchParams } = new URL(req.url);
