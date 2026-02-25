@@ -10,11 +10,12 @@ import { handleApiError } from "@/server/errors/handleApiError";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const { id } = await params;
     await requirePermission("lesson:read");
-    return NextResponse.json(await getLessonById(params.id));
+    return NextResponse.json(await getLessonById(id));
   } catch (err) {
     return handleApiError(err);
   }
@@ -22,9 +23,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const { id } = await params;
     await requirePermission("lesson:update");
 
     const body = await request.json();
@@ -37,7 +39,7 @@ export async function PUT(
       );
     }
 
-    return NextResponse.json(await updateLesson(params.id, parsed.data));
+    return NextResponse.json(await updateLesson(id, parsed.data));
   } catch (err) {
     return handleApiError(err);
   }
@@ -45,11 +47,12 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const { id } = await params;
     await requirePermission("lesson:delete");
-    await deleteLesson(params.id);
+    await deleteLesson(id);
     return NextResponse.json({ success: true });
   } catch (err) {
     return handleApiError(err);
