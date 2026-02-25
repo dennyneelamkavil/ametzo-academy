@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { FormHeader, FormError } from "@/components/form";
@@ -10,6 +11,7 @@ import { ViewActions, ViewField, ViewSection } from "@/components/view";
 import { useAdminEntity } from "@/hooks";
 
 import type { Lesson } from "@/lib/types";
+import MediaPreviewModal from "@/components/ui/media/MediaPreviewModal";
 
 type Props = {
   id: string;
@@ -17,6 +19,7 @@ type Props = {
 
 export default function LessonViewClient({ id }: Props) {
   const router = useRouter();
+  const [preview, setPreview] = useState<string | null>(null);
 
   const {
     data: lesson,
@@ -64,20 +67,38 @@ export default function LessonViewClient({ id }: Props) {
             {/* Video Section */}
             {lesson.videoUrl && (
               <ViewSection>
-                <div className="space-y-4">
-                  <p className="text-sm text-gray-500">Lesson Video</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="border rounded-lg p-3 space-y-3">
+                    <video
+                      src={lesson.videoUrl.url}
+                      controls
+                      className="w-full rounded"
+                    />
 
-                  <video
-                    src={lesson.videoUrl.url}
-                    controls
-                    className="w-full max-w-3xl rounded-lg border dark:border-gray-800"
-                  />
-
-                  {lesson.videoUrl.caption && (
-                    <p className="text-sm text-gray-500">
-                      {lesson.videoUrl.caption}
-                    </p>
-                  )}
+                    {/* Metadata */}
+                    {(lesson.videoUrl.alt || lesson.videoUrl.caption) && (
+                      <div className="space-y-1">
+                        {lesson.videoUrl.alt && (
+                          <p className="text-sm text-gray-700 dark:text-gray-300">
+                            <span className="font-medium">Alt:</span>{" "}
+                            {lesson.videoUrl.alt}
+                          </p>
+                        )}
+                        {lesson.videoUrl.caption && (
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            <span className="font-medium">Caption:</span>{" "}
+                            {lesson.videoUrl.caption}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    <button
+                      onClick={() => setPreview(lesson.videoUrl.url)}
+                      className="rounded border px-3 py-1 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    >
+                      ▶ Preview Video
+                    </button>
+                  </div>
                 </div>
               </ViewSection>
             )}
@@ -108,6 +129,13 @@ export default function LessonViewClient({ id }: Props) {
           </div>
         )}
       </div>
+
+      <MediaPreviewModal
+        isOpen={!!preview}
+        onClose={() => setPreview(null)}
+        type={"video"}
+        src={preview ?? ""}
+      />
     </div>
   );
 }
